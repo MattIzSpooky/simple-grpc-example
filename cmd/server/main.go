@@ -16,6 +16,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 func main() {
@@ -50,6 +51,8 @@ func main() {
 	grpcServer := grpc.NewServer()
 	grpcSvc := service.NewGRPCServer(queries)
 	pb.RegisterNotesServiceServer(grpcServer, grpcSvc)
+
+	reflection.Register(grpcServer)
 
 	// run servers
 	go func() {
