@@ -7,6 +7,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"fmt"
 )
 
 type DBTX interface {
@@ -20,12 +21,108 @@ func New(db DBTX) *Queries {
 	return &Queries{db: db}
 }
 
+func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
+	q := Queries{db: db}
+	var err error
+	if q.createNoteStmt, err = db.PrepareContext(ctx, createNote); err != nil {
+		return nil, fmt.Errorf("error preparing query CreateNote: %w", err)
+	}
+	if q.deleteNoteByIDStmt, err = db.PrepareContext(ctx, deleteNoteByID); err != nil {
+		return nil, fmt.Errorf("error preparing query DeleteNoteByID: %w", err)
+	}
+	if q.getAllNotesStmt, err = db.PrepareContext(ctx, getAllNotes); err != nil {
+		return nil, fmt.Errorf("error preparing query GetAllNotes: %w", err)
+	}
+	if q.getNoteByIDStmt, err = db.PrepareContext(ctx, getNoteByID); err != nil {
+		return nil, fmt.Errorf("error preparing query GetNoteByID: %w", err)
+	}
+	if q.updateNoteByIDStmt, err = db.PrepareContext(ctx, updateNoteByID); err != nil {
+		return nil, fmt.Errorf("error preparing query UpdateNoteByID: %w", err)
+	}
+	return &q, nil
+}
+
+func (q *Queries) Close() error {
+	var err error
+	if q.createNoteStmt != nil {
+		if cerr := q.createNoteStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing createNoteStmt: %w", cerr)
+		}
+	}
+	if q.deleteNoteByIDStmt != nil {
+		if cerr := q.deleteNoteByIDStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing deleteNoteByIDStmt: %w", cerr)
+		}
+	}
+	if q.getAllNotesStmt != nil {
+		if cerr := q.getAllNotesStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getAllNotesStmt: %w", cerr)
+		}
+	}
+	if q.getNoteByIDStmt != nil {
+		if cerr := q.getNoteByIDStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getNoteByIDStmt: %w", cerr)
+		}
+	}
+	if q.updateNoteByIDStmt != nil {
+		if cerr := q.updateNoteByIDStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing updateNoteByIDStmt: %w", cerr)
+		}
+	}
+	return err
+}
+
+func (q *Queries) exec(ctx context.Context, stmt *sql.Stmt, query string, args ...interface{}) (sql.Result, error) {
+	switch {
+	case stmt != nil && q.tx != nil:
+		return q.tx.StmtContext(ctx, stmt).ExecContext(ctx, args...)
+	case stmt != nil:
+		return stmt.ExecContext(ctx, args...)
+	default:
+		return q.db.ExecContext(ctx, query, args...)
+	}
+}
+
+func (q *Queries) query(ctx context.Context, stmt *sql.Stmt, query string, args ...interface{}) (*sql.Rows, error) {
+	switch {
+	case stmt != nil && q.tx != nil:
+		return q.tx.StmtContext(ctx, stmt).QueryContext(ctx, args...)
+	case stmt != nil:
+		return stmt.QueryContext(ctx, args...)
+	default:
+		return q.db.QueryContext(ctx, query, args...)
+	}
+}
+
+func (q *Queries) queryRow(ctx context.Context, stmt *sql.Stmt, query string, args ...interface{}) *sql.Row {
+	switch {
+	case stmt != nil && q.tx != nil:
+		return q.tx.StmtContext(ctx, stmt).QueryRowContext(ctx, args...)
+	case stmt != nil:
+		return stmt.QueryRowContext(ctx, args...)
+	default:
+		return q.db.QueryRowContext(ctx, query, args...)
+	}
+}
+
 type Queries struct {
-	db DBTX
+	db                 DBTX
+	tx                 *sql.Tx
+	createNoteStmt     *sql.Stmt
+	deleteNoteByIDStmt *sql.Stmt
+	getAllNotesStmt    *sql.Stmt
+	getNoteByIDStmt    *sql.Stmt
+	updateNoteByIDStmt *sql.Stmt
 }
 
 func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 	return &Queries{
-		db: tx,
+		db:                 tx,
+		tx:                 tx,
+		createNoteStmt:     q.createNoteStmt,
+		deleteNoteByIDStmt: q.deleteNoteByIDStmt,
+		getAllNotesStmt:    q.getAllNotesStmt,
+		getNoteByIDStmt:    q.getNoteByIDStmt,
+		updateNoteByIDStmt: q.updateNoteByIDStmt,
 	}
 }

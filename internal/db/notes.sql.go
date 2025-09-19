@@ -18,7 +18,7 @@ VALUES ($1)
 `
 
 func (q *Queries) CreateNote(ctx context.Context, description string) (Note, error) {
-	row := q.db.QueryRowContext(ctx, createNote, description)
+	row := q.queryRow(ctx, q.createNoteStmt, createNote, description)
 	var i Note
 	err := row.Scan(
 		&i.ID,
@@ -34,7 +34,7 @@ DELETE FROM notes WHERE id = $1
 `
 
 func (q *Queries) DeleteNoteByID(ctx context.Context, id uuid.UUID) error {
-	_, err := q.db.ExecContext(ctx, deleteNoteByID, id)
+	_, err := q.exec(ctx, q.deleteNoteByIDStmt, deleteNoteByID, id)
 	return err
 }
 
@@ -45,7 +45,7 @@ ORDER BY created DESC
 `
 
 func (q *Queries) GetAllNotes(ctx context.Context) ([]Note, error) {
-	rows, err := q.db.QueryContext(ctx, getAllNotes)
+	rows, err := q.query(ctx, q.getAllNotesStmt, getAllNotes)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +77,7 @@ SELECT id, description, created, updated FROM notes WHERE id = $1
 `
 
 func (q *Queries) GetNoteByID(ctx context.Context, id uuid.UUID) (Note, error) {
-	row := q.db.QueryRowContext(ctx, getNoteByID, id)
+	row := q.queryRow(ctx, q.getNoteByIDStmt, getNoteByID, id)
 	var i Note
 	err := row.Scan(
 		&i.ID,
@@ -101,7 +101,7 @@ type UpdateNoteByIDParams struct {
 }
 
 func (q *Queries) UpdateNoteByID(ctx context.Context, arg UpdateNoteByIDParams) (Note, error) {
-	row := q.db.QueryRowContext(ctx, updateNoteByID, arg.ID, arg.Description)
+	row := q.queryRow(ctx, q.updateNoteByIDStmt, updateNoteByID, arg.ID, arg.Description)
 	var i Note
 	err := row.Scan(
 		&i.ID,
