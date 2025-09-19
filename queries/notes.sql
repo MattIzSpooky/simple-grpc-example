@@ -1,8 +1,7 @@
 -- name: CreateNote :one
-INSERT INTO notes (id, description)
-VALUES ($1, $2)
-    RETURNING id, description, created, updated;
-
+INSERT INTO notes (description)
+VALUES ($1)
+    RETURNING *;
 
 -- name: UpdateNoteByID :one
 UPDATE notes

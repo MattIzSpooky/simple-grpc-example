@@ -19,6 +19,7 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
+	NotesService_CreateNote_FullMethodName  = "/notes.NotesService/CreateNote"
 	NotesService_UpdateNote_FullMethodName  = "/notes.NotesService/UpdateNote"
 	NotesService_GetAllNotes_FullMethodName = "/notes.NotesService/GetAllNotes"
 	NotesService_DeleteNote_FullMethodName  = "/notes.NotesService/DeleteNote"
@@ -28,6 +29,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type NotesServiceClient interface {
+	CreateNote(ctx context.Context, in *CreateNoteRequest, opts ...grpc.CallOption) (*CreateNoteResponse, error)
 	UpdateNote(ctx context.Context, in *UpdateNoteRequest, opts ...grpc.CallOption) (*UpdateNoteResponse, error)
 	GetAllNotes(ctx context.Context, in *GetAllNotesRequest, opts ...grpc.CallOption) (*GetAllNotesResponse, error)
 	DeleteNote(ctx context.Context, in *DeleteNoteRequest, opts ...grpc.CallOption) (*DeleteNoteResponse, error)
@@ -39,6 +41,16 @@ type notesServiceClient struct {
 
 func NewNotesServiceClient(cc grpc.ClientConnInterface) NotesServiceClient {
 	return &notesServiceClient{cc}
+}
+
+func (c *notesServiceClient) CreateNote(ctx context.Context, in *CreateNoteRequest, opts ...grpc.CallOption) (*CreateNoteResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateNoteResponse)
+	err := c.cc.Invoke(ctx, NotesService_CreateNote_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *notesServiceClient) UpdateNote(ctx context.Context, in *UpdateNoteRequest, opts ...grpc.CallOption) (*UpdateNoteResponse, error) {
@@ -75,6 +87,7 @@ func (c *notesServiceClient) DeleteNote(ctx context.Context, in *DeleteNoteReque
 // All implementations must embed UnimplementedNotesServiceServer
 // for forward compatibility.
 type NotesServiceServer interface {
+	CreateNote(context.Context, *CreateNoteRequest) (*CreateNoteResponse, error)
 	UpdateNote(context.Context, *UpdateNoteRequest) (*UpdateNoteResponse, error)
 	GetAllNotes(context.Context, *GetAllNotesRequest) (*GetAllNotesResponse, error)
 	DeleteNote(context.Context, *DeleteNoteRequest) (*DeleteNoteResponse, error)
@@ -88,6 +101,9 @@ type NotesServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedNotesServiceServer struct{}
 
+func (UnimplementedNotesServiceServer) CreateNote(context.Context, *CreateNoteRequest) (*CreateNoteResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateNote not implemented")
+}
 func (UnimplementedNotesServiceServer) UpdateNote(context.Context, *UpdateNoteRequest) (*UpdateNoteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateNote not implemented")
 }
@@ -116,6 +132,24 @@ func RegisterNotesServiceServer(s grpc.ServiceRegistrar, srv NotesServiceServer)
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&NotesService_ServiceDesc, srv)
+}
+
+func _NotesService_CreateNote_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateNoteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NotesServiceServer).CreateNote(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: NotesService_CreateNote_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NotesServiceServer).CreateNote(ctx, req.(*CreateNoteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _NotesService_UpdateNote_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -179,6 +213,10 @@ var NotesService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "notes.NotesService",
 	HandlerType: (*NotesServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "CreateNote",
+			Handler:    _NotesService_CreateNote_Handler,
+		},
 		{
 			MethodName: "UpdateNote",
 			Handler:    _NotesService_UpdateNote_Handler,

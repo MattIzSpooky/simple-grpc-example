@@ -12,18 +12,13 @@ import (
 )
 
 const createNote = `-- name: CreateNote :one
-INSERT INTO notes (id, description)
-VALUES ($1, $2)
+INSERT INTO notes (description)
+VALUES ($1)
     RETURNING id, description, created, updated
 `
 
-type CreateNoteParams struct {
-	ID          uuid.UUID `json:"id"`
-	Description string    `json:"description"`
-}
-
-func (q *Queries) CreateNote(ctx context.Context, arg CreateNoteParams) (Note, error) {
-	row := q.db.QueryRowContext(ctx, createNote, arg.ID, arg.Description)
+func (q *Queries) CreateNote(ctx context.Context, description string) (Note, error) {
+	row := q.db.QueryRowContext(ctx, createNote, description)
 	var i Note
 	err := row.Scan(
 		&i.ID,

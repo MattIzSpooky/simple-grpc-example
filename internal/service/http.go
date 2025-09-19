@@ -4,11 +4,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"github.com/mattizspooky/simple-grpc-example/v2/internal/db"
-	"net/http"
-
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/mattizspooky/simple-grpc-example/v2/internal/db"
+	"net/http"
 )
 
 type Service struct {
@@ -18,8 +17,9 @@ type Service struct {
 func NewService(q *db.Queries) *Service { return &Service{q: q} }
 
 func (s *Service) RegisterHTTP(r *chi.Mux) {
-	r.Put("/notes/{id}", s.handleUpdateNote)
+	r.Post("/notes", s.handleCreateNote)
 	r.Get("/notes", s.handleGetAll)
+	r.Put("/notes/{id}", s.handleUpdateNote)
 	r.Delete("/notes/{id}", s.handleDelete)
 }
 
@@ -81,4 +81,25 @@ func (s *Service) handleDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Service) handleCreateNote(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Description string `json:"description"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	note, err := s.q.CreateNote(r.Context(), body.Description)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(note)
 }

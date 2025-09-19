@@ -15,6 +15,13 @@ message Note {
   google.protobuf.Timestamp updated = 4;
 }
 
+message CreateNoteRequest {
+  string description = 1;
+}
+
+message CreateNoteResponse {
+  Note note = 1;
+}
 
 message UpdateNoteRequest {
   string id = 1;
@@ -40,6 +47,7 @@ message DeleteNoteResponse {}
 
 
 service NotesService {
+  rpc CreateNote(CreateNoteRequest) returns (CreateNoteResponse);
   rpc UpdateNote(UpdateNoteRequest) returns (UpdateNoteResponse);
   rpc GetAllNotes(GetAllNotesRequest) returns (GetAllNotesResponse);
   rpc DeleteNote(DeleteNoteRequest) returns (DeleteNoteResponse);

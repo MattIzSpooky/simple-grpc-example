@@ -3,12 +3,11 @@ package service
 import (
 	"context"
 	"database/sql"
+	"github.com/google/uuid"
 	"github.com/mattizspooky/simple-grpc-example/v2/internal/db"
 	"github.com/mattizspooky/simple-grpc-example/v2/internal/pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-
-	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -57,6 +56,23 @@ func (s *GRPCServer) DeleteNote(ctx context.Context, req *pb.DeleteNoteRequest) 
 		return nil, err
 	}
 	return &pb.DeleteNoteResponse{}, nil
+}
+
+func (s *GRPCServer) CreateNote(ctx context.Context, req *pb.CreateNoteRequest) (*pb.CreateNoteResponse, error) {
+	note, err := s.q.CreateNote(ctx, req.Description)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.CreateNoteResponse{
+		Note: &pb.Note{
+			Id:          note.ID.String(),
+			Description: note.Description,
+			Created:     timestamppb.New(note.Created),
+			Updated:     nil,
+		},
+	}, nil
 }
 
 func toProtoNote(n db.Note) *pb.Note {
